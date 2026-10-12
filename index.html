@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraNotes - Catatan & Tipografi Kustom</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Inter, Poppins, Playfair Display, Caveat, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-sans-alt { font-family: 'Poppins', sans-serif; }
+    .font-serif-serif { font-family: 'Playfair Display', Georgia, serif; }
+    .font-handwriting { font-family: 'Caveat', cursive; }
+    .font-monospace { font-family: 'JetBrains Mono', monospace; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+
+    /* Glass effect */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .glass-panel-dark {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Editable note placeholder */
+    [contenteditable]:empty:before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+      cursor: text;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased selection:bg-indigo-500 selection:text-white transition-all duration-700 bg-cover bg-center bg-fixed relative flex flex-col" id="appBody">
+  <!-- Ambient Background Overlay to guarantee contrast and readability -->
+  <div id="bgOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-all duration-700 pointer-events-none -z-10"></div>
+
+  <header class="sticky top-0 z-30 px-4 sm:px-8 py-3.5 border-b border-white/20 glass-panel shadow-sm">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand & Stats -->
+      <div class="flex items-center justify-between w-full sm:w-auto">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+            <i class="fa-solid fa-feather text-lg"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg text-slate-900 tracking-tight leading-tight flex items-center gap-2">
+              AuraNotes
+              <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Studio</span>
+            </h1>
+            <p class="text-xs text-slate-500" id="notesCounter">0 catatan tersimpan</p>
+          </div>
+        </div>
+
+        <!-- Mobile Quick Action Button -->
+        <button id="btnNewNoteMobile" class="sm:hidden px-3.5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow flex items-center gap-1.5">
+          <i class="fa-solid fa-plus text-xs"></i> Buat
+        </button>
+      </div>
+
+      <!-- Center: Real-time Search -->
+      <div class="w-full sm:max-w-md relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input 
+          type="text" 
+          id="searchInput"
+          placeholder="Cari judul, tag, atau isi catatan..." 
+          class="w-full pl-10 pr-10 py-2 rounded-xl bg-white/70 border border-slate-200/80 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner"
+        >
+        <button id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Right: Random Wallpaper & Add Note -->
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <!-- Random Wallpaper Button -->
+        <button 
+          id="btnRandomBg" 
+          title="Ganti Wallpaper Latar Acak"
+          class="px-3 py-2 rounded-xl bg-white/80 border border-slate-200/80 hover:bg-white text-slate-700 text-xs font-semibold flex items-center gap-2 shadow-sm transition active:scale-95 group"
+        >
+          <i class="fa-solid fa-shuffle text-indigo-600 group-hover:rotate-180 transition-transform duration-500"></i>
+          <span>Ganti Background</span>
+        </button>
+
+        <!-- New Note Button (Desktop) -->
+        <button 
+          id="btnNewNoteDesktop"
+          class="hidden sm:flex px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 shadow-md shadow-indigo-600/25 items-center gap-2 transition active:scale-95"
+        >
+          <i class="fa-solid fa-plus text-xs"></i> Catatan Baru
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
+    
+    <!-- Filter Pills & Category tags -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full" id="tagFiltersContainer">
+        <button class="filter-pill active-pill px-3 py-1 rounded-full text-xs font-medium bg-slate-900 text-white shadow-sm transition" data-tag="ALL">
+          Semua Catatan
+        </button>
+        <button class="filter-pill px-3 py-1 rounded-full text-xs font-medium bg-white/80 hover:bg-white text-slate-700 border border-slate-200 transition" data-tag="Ide">
+          💡 Ide
+        </button>
+        <button class="filter-pill px-3 py-1 rounded-full text-xs font-medium bg-white/80 hover:bg-white text-slate-700 border border-slate-200 transition" data-tag="Kerja">
+          💼 Kerja
+        </button>
+        <button class="filter-pill px-3 py-1 rounded-full text-xs font-medium bg-white/80 hover:bg-white text-slate-700 border border-slate-200 transition" data-tag="Pribadi">
+          🏠 Pribadi
+        </button>
+        <button class="filter-pill px-3 py-1 rounded-full text-xs font-medium bg-white/80 hover:bg-white text-slate-700 border border-slate-200 transition" data-tag="Penting">
+          ⭐ Penting
+        </button>
+      </div>
+
+      <!-- Wallpaper theme indicator info -->
+      <div class="hidden md:flex items-center gap-2 text-xs text-white/90 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-sm">
+        <i class="fa-solid fa-image text-indigo-300"></i>
+        <span id="currentBgLabel">Wallpaper: Minimal Horizon</span>
+      </div>
+    </div>
+
+    <!-- Grid of Notes Cards -->
+    <div id="notesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <!-- Notes cards will be rendered dynamically here -->
+    </div>
+
+    <!-- Empty State Message -->
+    <div id="emptyState" class="hidden flex-col items-center justify-center py-20 text-center glass-panel rounded-3xl p-8 max-w-md mx-auto shadow-xl">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-4 shadow-inner">
+        <i class="fa-regular fa-note-sticky text-3xl"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 mb-1" id="emptyStateTitle">Belum Ada Catatan</h3>
+      <p class="text-xs text-slate-500 mb-5 max-w-xs" id="emptyStateDesc">Mulai tuangkan ide, rencana, atau jurnal harian dengan gaya tipografi favoritmu.</p>
+      <button id="btnEmptyCreate" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-md transition active:scale-95 flex items-center gap-2">
+        <i class="fa-solid fa-plus text-xs"></i> Buat Catatan Pertama
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Note Editor Modal -->
+  <div id="noteModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-white/95 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col border border-white/80 overflow-hidden backdrop-blur-md transform transition-all duration-200 scale-95" id="noteModalCard">
+      
+      <!-- Modal Top Bar -->
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider" id="modalModeTitle">Editor Catatan</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnPinNote" type="button" title="Sematkan Catatan" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-white transition">
+            <i class="fa-solid fa-thumbtack text-sm"></i>
+          </button>
+          <button id="btnCloseModal" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-white transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Typography & Formatting Toolbar -->
+      <div class="px-4 py-2.5 bg-slate-100/90 border-b border-slate-200/80 flex flex-wrap items-center gap-1.5 text-slate-700">
+        
+        <!-- Font Family Selector -->
+        <div class="relative inline-block">
+          <select id="typographyFontFamily" class="h-8 px-2.5 text-xs font-medium rounded-lg border border-slate-300 bg-white hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="Inter">Default (Inter)</option>
+            <option value="Poppins">Modern (Poppins)</option>
+            <option value="'Playfair Display', Georgia, serif">Elegan (Playfair Serif)</option>
+            <option value="'Caveat', cursive">Tulisan Tangan (Caveat)</option>
+            <option value="'JetBrains Mono', monospace">Teknis (Monospace)</option>
+          </select>
+        </div>
+
+        <!-- Font Size Selector -->
+        <div class="relative inline-block">
+          <select id="typographyFontSize" class="h-8 px-2 text-xs font-medium rounded-lg border border-slate-300 bg-white hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="3">Standar</option>
+            <option value="4">Sedang</option>
+            <option value="5">Besar (H2)</option>
+            <option value="6">Sangat Besar (H1)</option>
+            <option value="2">Kecil</option>
+          </select>
+        </div>
+
+        <div class="h-5 w-px bg-slate-300 mx-1"></div>
+
+        <!-- Text Style Action Buttons -->
+        <button type="button" data-command="bold" title="Tebal (Ctrl+B)" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs font-bold transition">
+          <i class="fa-solid fa-bold"></i>
+        </button>
+        <button type="button" data-command="italic" title="Miring (Ctrl+I)" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs italic transition">
+          <i class="fa-solid fa-italic"></i>
+        </button>
+        <button type="button" data-command="underline" title="Garis Bawah (Ctrl+U)" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs underline transition">
+          <i class="fa-solid fa-underline"></i>
+        </button>
+        <button type="button" data-command="strikeThrough" title="Coret Teks" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs line-through transition">
+          <i class="fa-solid fa-strikethrough"></i>
+        </button>
+
+        <div class="h-5 w-px bg-slate-300 mx-1"></div>
+
+        <!-- Alignment -->
+        <button type="button" data-command="justifyLeft" title="Rata Kiri" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-align-left"></i>
+        </button>
+        <button type="button" data-command="justifyCenter" title="Rata Tengah" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-align-center"></i>
+        </button>
+        <button type="button" data-command="justifyRight" title="Rata Kanan" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-align-right"></i>
+        </button>
+
+        <div class="h-5 w-px bg-slate-300 mx-1"></div>
+
+        <!-- Lists -->
+        <button type="button" data-command="insertUnorderedList" title="Daftar Bullet" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-list-ul"></i>
+        </button>
+        <button type="button" data-command="insertOrderedList" title="Daftar Nomor" class="format-btn w-8 h-8 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-list-ol"></i>
+        </button>
+
+        <!-- Color Picker -->
+        <div class="flex items-center ml-auto gap-1.5">
+          <label class="text-[11px] font-medium text-slate-500 hidden sm:inline">Warna:</label>
+          <div class="relative flex items-center">
+            <input type="color" id="textColorPicker" value="#0f172a" title="Pilih Warna Teks" class="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer p-0 bg-white">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Editor Body -->
+      <div class="flex-1 overflow-y-auto p-5 sm:p-7 flex flex-col gap-4">
+        
+        <!-- Note Title -->
+        <input 
+          type="text" 
+          id="noteTitleInput" 
+          placeholder="Judul Catatan..." 
+          class="w-full text-xl sm:text-2xl font-bold text-slate-900 border-0 border-b border-transparent focus:border-indigo-400 focus:outline-none pb-2 bg-transparent placeholder-slate-400"
+        >
+
+        <!-- Category & Color Theme Selection -->
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <!-- Category selection -->
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500 font-medium">Kategori:</span>
+            <select id="noteCategorySelect" class="bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <option value="Ide">💡 Ide</option>
+              <option value="Kerja">💼 Kerja</option>
+              <option value="Pribadi">🏠 Pribadi</option>
+              <option value="Penting">⭐ Penting</option>
+              <option value="Lainnya">📝 Lainnya</option>
+            </select>
+          </div>
+
+          <!-- Note Card Accent Palette -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500 font-medium mr-1">Warna Kartu:</span>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-white border-2 border-indigo-500 transition-transform hover:scale-110" data-cardcolor="bg-white" title="Putih Bersih"></button>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-amber-50 border border-amber-300 transition-transform hover:scale-110" data-cardcolor="bg-amber-50" title="Kuning Hangat"></button>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-emerald-50 border border-emerald-300 transition-transform hover:scale-110" data-cardcolor="bg-emerald-50" title="Hijau Mint"></button>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-sky-50 border border-sky-300 transition-transform hover:scale-110" data-cardcolor="bg-sky-50" title="Biru Langit"></button>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-rose-50 border border-rose-300 transition-transform hover:scale-110" data-cardcolor="bg-rose-50" title="Merah Muda"></button>
+            <button type="button" class="color-dot w-5 h-5 rounded-full bg-purple-50 border border-purple-300 transition-transform hover:scale-110" data-cardcolor="bg-purple-50" title="Ungu Lilac"></button>
+          </div>
+        </div>
+
+        <!-- Rich Text Content Area -->
+        <div 
+          id="noteContentEditor" 
+          contenteditable="true" 
+          data-placeholder="Tulis ide atau catatanmu di sini..."
+          class="flex-1 min-h-[220px] p-4 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none overflow-y-auto leading-relaxed text-slate-800 transition-all bg-white/70"
+        ></div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between text-xs">
+        <div class="text-slate-400 flex items-center gap-2">
+          <i class="fa-regular fa-clock"></i>
+          <span id="editorStats">0 kata · 0 karakter</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnCancelModal" type="button" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200/60 font-semibold transition">
+            Batal
+          </button>
+          <button id="btnSaveNote" type="button" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md shadow-indigo-600/20 transition active:scale-95 flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Catatan
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal (No alert/confirm) -->
+  <div id="deleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center border border-white transform transition-transform scale-95" id="deleteModalCard">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <i class="fa-solid fa-trash-can text-lg"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Hapus Catatan Ini?</h3>
+      <p class="text-xs text-slate-500 mb-5 leading-relaxed">Catatan yang dihapus tidak dapat dipulihkan kembali dari penyimpanan lokal perangkat ini.</p>
+      <div class="flex items-center justify-center gap-2">
+        <button id="btnCancelDelete" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-xs transition">
+          Batal
+        </button>
+        <button id="btnConfirmDelete" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition active:scale-95">
+          Ya, Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-xs font-medium shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-check-circle text-emerald-400"></i>
+    <span id="toastMessage">Tindakan berhasil!</span>
+  </div>
+
+  <script>
+    // Curated high quality aesthetic wallpapers (Nature, Minimalist, Cozy, Sunset, Architecture)
+    const WALLPAPERS = [
+      {
+        name: "Minimal Horizon",
+        url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Alpine Mist",
+        url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Emerald Forest",
+        url: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Golden Hour Dunes",
+        url: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Cosmic Twilight",
+        url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Nordic Lake",
+        url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Serene Clouds",
+        url: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1920&q=80"
+      },
+      {
+        name: "Autumn Harmony",
+        url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80"
+      }
+    ];
+
+    // Local Storage Keys
+    const STORAGE_KEY_NOTES = 'auranotes_data_list_v1';
+    const STORAGE_KEY_BG = 'auranotes_current_bg_index';
+
+    // Application State
+    let notes = [];
+    let currentFilterTag = 'ALL';
+    let searchQuery = '';
+    let currentEditingId = null;
+    let selectedNoteColor = 'bg-white';
+    let isCurrentNotePinned = false;
+    let noteIdToDelete = null;
+    let currentBgIndex = 0;
+
+    // DOM Elements
+    const appBody = document.getElementById('appBody');
+    const notesGrid = document.getElementById('notesGrid');
+    const emptyState = document.getElementById('emptyState');
+    const emptyStateTitle = document.getElementById('emptyStateTitle');
+    const emptyStateDesc = document.getElementById('emptyStateDesc');
+    const notesCounter = document.getElementById('notesCounter');
+    const currentBgLabel = document.getElementById('currentBgLabel');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const btnRandomBg = document.getElementById('btnRandomBg');
+    const btnNewNoteDesktop = document.getElementById('btnNewNoteDesktop');
+    const btnNewNoteMobile = document.getElementById('btnNewNoteMobile');
+    const btnEmptyCreate = document.getElementById('btnEmptyCreate');
+
+    // Note Modal Elements
+    const noteModal = document.getElementById('noteModal');
+    const noteModalCard = document.getElementById('noteModalCard');
+    const modalModeTitle = document.getElementById('modalModeTitle');
+    const noteTitleInput = document.getElementById('noteTitleInput');
+    const noteContentEditor = document.getElementById('noteContentEditor');
+    const noteCategorySelect = document.getElementById('noteCategorySelect');
+    const btnPinNote = document.getElementById('btnPinNote');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const btnSaveNote = document.getElementById('btnSaveNote');
+    const editorStats = document.getElementById('editorStats');
+
+    // Typography Controls
+    const typographyFontFamily = document.getElementById('typographyFontFamily');
+    const typographyFontSize = document.getElementById('typographyFontSize');
+    const textColorPicker = document.getElementById('textColorPicker');
+    const formatButtons = document.querySelectorAll('.format-btn');
+    const colorDots = document.querySelectorAll('.color-dot');
+    const tagFilters = document.querySelectorAll('.filter-pill');
+
+    // Delete Modal Elements
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteModalCard = document.getElementById('deleteModalCard');
+    const btnCancelDelete = document.getElementById('btnCancelDelete');
+    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+
+    // Toast Elements
+    const toastNotification = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+    let toastTimeout = null;
+
+    function initApp() {
+      // Load saved background
+      const savedBgIndex = localStorage.getItem(STORAGE_KEY_BG);
+      if (savedBgIndex !== null && !isNaN(savedBgIndex)) {
+        currentBgIndex = parseInt(savedBgIndex, 10) % WALLPAPERS.length;
+      } else {
+        currentBgIndex = Math.floor(Math.random() * WALLPAPERS.length);
+      }
+      applyWallpaper(currentBgIndex);
+
+      // Load saved notes
+      const savedNotesJson = localStorage.getItem(STORAGE_KEY_NOTES);
+      if (savedNotesJson) {
+        try {
+          notes = JSON.parse(savedNotesJson);
+        } catch (e) {
+          console.error("Gagal membaca data catatan dari localStorage", e);
+          notes = [];
+        }
+      }
+
+      // If empty, insert demo starter notes to guide the user
+      if (!notes || notes.length === 0) {
+        notes = [
+          {
+            id: 'demo-1',
+            title: '✨ Selamat Datang di AuraNotes!',
+            content: '<div>Ini adalah aplikasi catatan serbaguna dengan dukungan <b>tipografi kustom</b>, penggantian <i>latar belakang acak</i>, dan penyimpanan lokal otomatis.</div><div><br></div><div>Cobalah tombol <b>Ganti Background</b> di atas untuk suasana baru!</div>',
+            fontFamily: 'Inter',
+            cardColor: 'bg-white',
+            category: 'Ide',
+            isPinned: true,
+            updatedAt: Date.now()
+          },
+          {
+            id: 'demo-2',
+            title: '💡 Ide Tipografi Elegan',
+            content: '<div>Setiap catatan dapat memiliki <b>gaya font tersendiri</b> seperti Playfair Display yang anggun, atau JetBrains Mono untuk catatan kode dan teknis.</div>',
+            fontFamily: "'Playfair Display', Georgia, serif",
+            cardColor: 'bg-amber-50',
+            category: 'Penting',
+            isPinned: false,
+            updatedAt: Date.now() - 3600000
+          }
+        ];
+        saveNotesToStorage();
+      }
+
+      renderNotes();
+      setupEventListeners();
+    }
+
+    function applyWallpaper(index) {
+      const selected = WALLPAPERS[index];
+      appBody.style.backgroundImage = `url('${selected.url}')`;
+      currentBgLabel.textContent = `Wallpaper: ${selected.name}`;
+      localStorage.setItem(STORAGE_KEY_BG, index.toString());
+    }
+
+    function switchRandomWallpaper() {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * WALLPAPERS.length);
+      } while (WALLPAPERS.length > 1 && nextIndex === currentBgIndex);
+
+      currentBgIndex = nextIndex;
+      applyWallpaper(currentBgIndex);
+      showToast(`Background diubah: ${WALLPAPERS[currentBgIndex].name}`, 'fa-image');
+    }
+
+    function saveNotesToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notes));
+      } catch (err) {
+        console.error("Error saving to localStorage", err);
+        showToast("Penyimpanan lokal penuh atau gagal disimpan", "fa-triangle-exclamation");
+      }
+    }
+
+    function formatDate(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function sanitizeHTML(html) {
+      // Basic sanitize for safety while keeping rich text tags
+      return html || '';
+    }
+
+    function renderNotes() {
+      // Filter notes
+      const filtered = notes.filter(note => {
+        const matchesCategory = currentFilterTag === 'ALL' || note.category === currentFilterTag;
+        const searchLower = searchQuery.toLowerCase().trim();
+        if (!searchLower) return matchesCategory;
+
+        const titleMatches = (note.title || '').toLowerCase().includes(searchLower);
+        const contentText = (note.content || '').replace(/<[^>]*>/g, '').toLowerCase();
+        const contentMatches = contentText.includes(searchLower);
+        const categoryMatches = (note.category || '').toLowerCase().includes(searchLower);
+
+        return matchesCategory && (titleMatches || contentMatches || categoryMatches);
+      });
+
+      // Sort: Pinned first, then newest updatedAt
+      filtered.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+
+      // Update counters
+      notesCounter.textContent = `${notes.length} catatan tersimpan`;
+
+      // Check empty state
+      if (filtered.length === 0) {
+        notesGrid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        if (searchQuery) {
+          emptyStateTitle.textContent = 'Tidak Ada Catatan Ditemukan';
+          emptyStateDesc.textContent = `Tidak ada catatan yang cocok dengan kata kunci "${searchQuery}".`;
+        } else if (currentFilterTag !== 'ALL') {
+          emptyStateTitle.textContent = `Kategori ${currentFilterTag} Kosong`;
+          emptyStateDesc.textContent = `Belum ada catatan yang tersimpan di kategori ini.`;
+        } else {
+          emptyStateTitle.textContent = 'Belum Ada Catatan';
+          emptyStateDesc.textContent = 'Mulai tuangkan ide, rencana, atau jurnal harian dengan gaya tipografi favoritmu.';
+        }
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      emptyState.classList.remove('flex');
+
+      notesGrid.innerHTML = filtered.map(note => {
+        const pinIconClass = note.isPinned ? 'text-amber-500 fa-solid' : 'text-slate-300 fa-regular hover:text-amber-500';
+        const cardBg = note.cardColor || 'bg-white';
+        const fontFamilyStyle = note.fontFamily ? `font-family: ${note.fontFamily};` : '';
+
+        return `
+          <div 
+            class="${cardBg} rounded-2xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/60 flex flex-col justify-between group relative overflow-hidden backdrop-blur-sm transform hover:-translate-y-1"
+            data-id="${note.id}"
+          >
+            <!-- Top bar: Category badge & Pin button -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide bg-slate-900/5 text-slate-700 border border-slate-900/10">
+                ${note.category || 'Catatan'}
+              </span>
+              <button 
+                class="btn-toggle-pin w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5" 
+                data-id="${note.id}" 
+                title="${note.isPinned ? 'Lepas Sematan' : 'Sematkan di Atas'}"
+              >
+                <i class="fa-thumbtack ${pinIconClass} text-xs"></i>
+              </button>
+            </div>
+
+            <!-- Note Content Display -->
+            <div class="flex-1 cursor-pointer open-edit-trigger" data-id="${note.id}">
+              <h3 
+                class="font-bold text-base text-slate-900 mb-2 leading-snug line-clamp-2"
+                style="${fontFamilyStyle}"
+              >
+                ${escapeHtml(note.title || 'Tanpa Judul')}
+              </h3>
+
+              <div 
+                class="text-xs text-slate-600 line-clamp-4 leading-relaxed mb-4 overflow-hidden prose-sm"
+                style="${fontFamilyStyle}"
+              >
+                ${note.content || '<span class="italic text-slate-400">Catatan kosong...</span>'}
+              </div>
+            </div>
+
+            <!-- Footer: Timestamp & Action buttons -->
+            <div class="pt-3 border-t border-slate-900/10 flex items-center justify-between text-[11px] text-slate-500">
+              <span class="flex items-center gap-1">
+                <i class="fa-regular fa-clock text-[10px]"></i>
+                ${formatDate(note.updatedAt)}
+              </span>
+
+              <div class="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                <!-- Copy content -->
+                <button 
+                  class="btn-copy-note w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition" 
+                  data-id="${note.id}" 
+                  title="Salin Teks Catatan"
+                >
+                  <i class="fa-regular fa-copy text-xs"></i>
+                </button>
+                <!-- Edit note -->
+                <button 
+                  class="btn-edit-note w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition" 
+                  data-id="${note.id}" 
+                  title="Edit Catatan"
+                >
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <!-- Delete note -->
+                <button 
+                  class="btn-delete-note w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" 
+                  data-id="${note.id}" 
+                  title="Hapus Catatan"
+                >
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      attachCardEventListeners();
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function attachCardEventListeners() {
+      // Open editor click on content
+      document.querySelectorAll('.open-edit-trigger').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.getAttribute('data-id');
+          openEditorModal(id);
+        });
+      });
+
+      // Edit button
+      document.querySelectorAll('.btn-edit-note').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          openEditorModal(id);
+        });
+      });
+
+      // Pin toggle
+      document.querySelectorAll('.btn-toggle-pin').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          togglePinNote(id);
+        });
+      });
+
+      // Copy button
+      document.querySelectorAll('.btn-copy-note').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          copyNoteContent(id);
+        });
+      });
+
+      // Delete button
+      document.querySelectorAll('.btn-delete-note').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          promptDeleteModal(id);
+        });
+      });
+    }
+
+    function openEditorModal(noteId = null) {
+      currentEditingId = noteId;
+
+      if (noteId) {
+        // Edit existing
+        const note = notes.find(n => n.id === noteId);
+        if (!note) return;
+
+        modalModeTitle.textContent = "Edit Catatan";
+        noteTitleInput.value = note.title || '';
+        noteContentEditor.innerHTML = note.content || '';
+        noteCategorySelect.value = note.category || 'Ide';
+        selectedNoteColor = note.cardColor || 'bg-white';
+        isCurrentNotePinned = !!note.isPinned;
+        typographyFontFamily.value = note.fontFamily || 'Inter';
+        noteContentEditor.style.fontFamily = note.fontFamily || 'Inter';
+      } else {
+        // Create new
+        modalModeTitle.textContent = "Catatan Baru";
+        noteTitleInput.value = '';
+        noteContentEditor.innerHTML = '';
+        noteCategorySelect.value = 'Ide';
+        selectedNoteColor = 'bg-white';
+        isCurrentNotePinned = false;
+        typographyFontFamily.value = 'Inter';
+        noteContentEditor.style.fontFamily = 'Inter';
+      }
+
+      updatePinButtonUI();
+      updateSelectedColorDotUI();
+      updateStats();
+
+      // Show modal with animation
+      noteModal.classList.remove('hidden');
+      setTimeout(() => {
+        noteModal.classList.remove('opacity-0');
+        noteModalCard.classList.remove('scale-95');
+        noteTitleInput.focus();
+      }, 10);
+    }
+
+    function closeEditorModal() {
+      noteModal.classList.add('opacity-0');
+      noteModalCard.classList.add('scale-95');
+      setTimeout(() => {
+        noteModal.classList.add('hidden');
+        currentEditingId = null;
+      }, 200);
+    }
+
+    function applyTextFormat(command, value = null) {
+      noteContentEditor.focus();
+      document.execCommand(command, false, value);
+      updateStats();
+    }
+
+    function updateSelectedColorDotUI() {
+      colorDots.forEach(dot => {
+        const color = dot.getAttribute('data-cardcolor');
+        if (color === selectedNoteColor) {
+          dot.classList.add('ring-2', 'ring-indigo-600', 'ring-offset-2');
+        } else {
+          dot.classList.remove('ring-2', 'ring-indigo-600', 'ring-offset-2');
+        }
+      });
+    }
+
+    function updatePinButtonUI() {
+      if (isCurrentNotePinned) {
+        btnPinNote.classList.add('text-amber-500');
+        btnPinNote.classList.remove('text-slate-400');
+      } else {
+        btnPinNote.classList.remove('text-amber-500');
+        btnPinNote.classList.add('text-slate-400');
+      }
+    }
+
+    function updateStats() {
+      const text = noteContentEditor.innerText.trim();
+      const wordCount = text.length > 0 ? text.split(/\s+/).filter(Boolean).length : 0;
+      const charCount = text.length;
+      editorStats.textContent = `${wordCount} kata · ${charCount} karakter`;
+    }
+
+    function saveCurrentNote() {
+      const title = noteTitleInput.value.trim();
+      const content = noteContentEditor.innerHTML.trim();
+
+      // Validation
+      if (!title && (!content || content === '<br>')) {
+        showToast("Judul atau isi catatan tidak boleh kosong!", "fa-circle-exclamation");
+        noteTitleInput.focus();
+        return;
+      }
+
+      const noteData = {
+        title: title || 'Tanpa Judul',
+        content: content,
+        category: noteCategorySelect.value,
+        cardColor: selectedNoteColor,
+        fontFamily: typographyFontFamily.value,
+        isPinned: isCurrentNotePinned,
+        updatedAt: Date.now()
+      };
+
+      if (currentEditingId) {
+        // Update
+        const index = notes.findIndex(n => n.id === currentEditingId);
+        if (index !== -1) {
+          notes[index] = { ...notes[index], ...noteData };
+          showToast("Catatan berhasil diperbarui!", "fa-check");
+        }
+      } else {
+        // Create new
+        const newNote = {
+          id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          ...noteData
+        };
+        notes.unshift(newNote);
+        showToast("Catatan baru berhasil dibuat!", "fa-check");
+      }
+
+      saveNotesToStorage();
+      renderNotes();
+      closeEditorModal();
+    }
+
+    function promptDeleteModal(id) {
+      noteIdToDelete = id;
+      deleteModal.classList.remove('hidden');
+      setTimeout(() => {
+        deleteModal.classList.remove('opacity-0');
+        deleteModalCard.classList.remove('scale-95');
+      }, 10);
+    }
+
+    function closeDeleteModal() {
+      deleteModal.classList.add('opacity-0');
+      deleteModalCard.classList.add('scale-95');
+      setTimeout(() => {
+        deleteModal.classList.add('hidden');
+        noteIdToDelete = null;
+      }, 200);
+    }
+
+    function confirmDeleteNote() {
+      if (!noteIdToDelete) return;
+      notes = notes.filter(n => n.id !== noteIdToDelete);
+      saveNotesToStorage();
+      renderNotes();
+      closeDeleteModal();
+      showToast("Catatan telah dihapus", "fa-trash");
+    }
+
+    function togglePinNote(id) {
+      const note = notes.find(n => n.id === id);
+      if (note) {
+        note.isPinned = !note.isPinned;
+        saveNotesToStorage();
+        renderNotes();
+        showToast(note.isPinned ? "Catatan disematkan di atas" : "Sematan catatan dilepas", "fa-thumbtack");
+      }
+    }
+
+    function copyNoteContent(id) {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      const plainText = `${note.title}\n\n${note.content.replace(/<[^>]*>/g, '')}`;
+      
+      // Safe fallback clipboard copy
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = plainText;
+      tempTextArea.style.position = "fixed";
+      tempTextArea.style.opacity = "0";
+      document.body.appendChild(tempTextArea);
+      tempTextArea.focus();
+      tempTextArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast("Isi catatan berhasil disalin ke clipboard!", "fa-copy");
+        } else {
+          showToast("Gagal menyalin catatan", "fa-xmark");
+        }
+      } catch (err) {
+        showToast("Fitur salin tidak didukung oleh browser ini", "fa-xmark");
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    function showToast(message, iconClass = "fa-check") {
+      if (toastTimeout) clearTimeout(toastTimeout);
+
+      toastMessage.textContent = message;
+      toastIcon.className = `fa-solid ${iconClass} ${iconClass.includes('trash') || iconClass.includes('exclamation') ? 'text-rose-400' : 'text-emerald-400'}`;
+
+      toastNotification.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+
+      toastTimeout = setTimeout(() => {
+        toastNotification.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function setupEventListeners() {
+      // Random Background Click
+      btnRandomBg.addEventListener('click', switchRandomWallpaper);
+
+      // Create Note Buttons
+      btnNewNoteDesktop.addEventListener('click', () => openEditorModal());
+      btnNewNoteMobile.addEventListener('click', () => openEditorModal());
+      btnEmptyCreate.addEventListener('click', () => openEditorModal());
+
+      // Modal Close Buttons
+      btnCloseModal.addEventListener('click', closeEditorModal);
+      btnCancelModal.addEventListener('click', closeEditorModal);
+      btnSaveNote.addEventListener('click', saveCurrentNote);
+
+      // Delete Modal Buttons
+      btnCancelDelete.addEventListener('click', closeDeleteModal);
+      btnConfirmDelete.addEventListener('click', confirmDeleteNote);
+
+      // Search Events
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        if (searchQuery.trim().length > 0) {
+          clearSearchBtn.classList.remove('hidden');
+        } else {
+          clearSearchBtn.classList.add('hidden');
+        }
+        renderNotes();
+      });
+
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        clearSearchBtn.classList.add('hidden');
+        renderNotes();
+        searchInput.focus();
+      });
+
+      // Tag Filter Buttons
+      tagFilters.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tagFilters.forEach(b => {
+            b.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
+            b.classList.add('bg-white/80', 'text-slate-700', 'border', 'border-slate-200');
+          });
+          btn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
+          btn.classList.remove('bg-white/80', 'text-slate-700', 'border', 'border-slate-200');
+
+          currentFilterTag = btn.getAttribute('data-tag');
+          renderNotes();
+        });
+      });
+
+      // Pin Toggle in Editor
+      btnPinNote.addEventListener('click', () => {
+        isCurrentNotePinned = !isCurrentNotePinned;
+        updatePinButtonUI();
+      });
+
+      // Card Accent Colors
+      colorDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          selectedNoteColor = dot.getAttribute('data-cardcolor');
+          updateSelectedColorDotUI();
+        });
+      });
+
+      // Typography Format Buttons
+      formatButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const command = btn.getAttribute('data-command');
+          applyTextFormat(command);
+        });
+      });
+
+      // Typography Font Family Change
+      typographyFontFamily.addEventListener('change', (e) => {
+        noteContentEditor.style.fontFamily = e.target.value;
+      });
+
+      // Typography Font Size Change
+      typographyFontSize.addEventListener('change', (e) => {
+        applyTextFormat('fontSize', e.target.value);
+      });
+
+      // Typography Text Color Picker
+      textColorPicker.addEventListener('input', (e) => {
+        applyTextFormat('foreColor', e.target.value);
+      });
+
+      // Realtime Content Input Count
+      noteContentEditor.addEventListener('input', updateStats);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Esc to close modal
+        if (e.key === 'Escape') {
+          if (!deleteModal.classList.contains('hidden')) {
+            closeDeleteModal();
+          } else if (!noteModal.classList.contains('hidden')) {
+            closeEditorModal();
+          }
+        }
+        // Ctrl+S or Cmd+S to save inside modal
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          if (!noteModal.classList.contains('hidden')) {
+            e.preventDefault();
+            saveCurrentNote();
+          }
+        }
+      });
+    }
+
+    // Start App on Window Load
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
